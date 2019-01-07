@@ -1,44 +1,41 @@
-import * as fs from 'fs'
 import * as winston from 'winston'
 import { LOGGER_TYPE } from '../../shared/enum/common.enum'
-import { ConfigService } from '../config/config.service'
+import * as fs from 'fs'
+import { ConfigService } from "../config/config.service";
 
-const jsonFormat = (logEntry) => {
+const jsonFormatter = (logEntry) => {
   const base = {timestamp: new Date()}
   const json = Object.assign(base, logEntry.message)
   logEntry[Symbol.for('message')] = JSON.stringify(json)
   return logEntry
 }
 
-const winstonConfig = (errorType) => {
-
+const winstonConfig = (type: LOGGER_TYPE) => {
   if (!fs.existsSync(ConfigService.getLogDir())) {
     fs.mkdirSync(ConfigService.getLogDir())
   }
 
-  let option = {
-    transports: [
-      new winston.transports.Console(),
-      new winston.transports.File({
-        filename: errorType === LOGGER_TYPE.ERROR ?
-          `${ConfigService.getLogDir()}/error.log` : `${ConfigService.getLogDir()}/access.log`,
-      })]
+  const level = type === LOGGER_TYPE.ERROR ? 'error' : 'info'
+  const filename = type === LOGGER_TYPE.ERROR ? 'error.log' : 'access.log'
+
+  const transports = []
+  transports.push(new winston.transports.File({filename: `${ConfigService.getLogDir()}/${filename}`}))
+
+  if (ConfigService.isLocal()) {
+    transports.push(new winston.transports.Console())
   }
 
-  if (LOGGER_TYPE.ACCESS) {
-    option = Object.assign({format: winston.format(jsonFormat)()}, option)
+  return {
+    provide: type,
+    useFactory: () => winston.createLogger({
+      level,
+      format: winston.format(jsonFormatter)(),
+      transports,
+    }),
   }
-
-  return option
 }
 
 export const loggerProviders = [
-  {
-    provide: LOGGER_TYPE.ACCESS,
-    useFactory: () => winston.createLogger(winstonConfig(LOGGER_TYPE.ACCESS)),
-  },
-  {
-    provide: LOGGER_TYPE.ERROR,
-    useFactory: () => winston.createLogger(winstonConfig(LOGGER_TYPE.ERROR)),
-  },
+  winstonConfig(LOGGER_TYPE.ACCESS),
+  winstonConfig(LOGGER_TYPE.ERROR),
 ]

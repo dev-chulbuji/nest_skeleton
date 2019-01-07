@@ -30,9 +30,9 @@ export class AccessInterceptor implements NestInterceptor {
           body: request.body,
           timestamp: Date.now(),
           duration: Date.now() - now,
-          user_agent: request.headers['user-agent']
+          user_agent: request.headers['user-agent'],
         })
-      })
+      }),
     )
   }
 }
