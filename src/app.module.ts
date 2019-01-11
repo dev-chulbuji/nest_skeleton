@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm'
 import { LoggerModule } from './common/logger/logger.module'
 import { modules } from './modules/modules'
 import { config } from "./common/config/config";
+import 'source-map-support/register'
 
 @Module({
   imports: [
